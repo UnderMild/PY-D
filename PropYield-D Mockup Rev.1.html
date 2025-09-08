@@ -1,0 +1,418 @@
+
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PropYield‑D • Quick Yield App (MVP)</title>
+<style>
+  :root{
+    --bg:#0b0d10; --card:#111418; --ink:#e8eef6; --muted:#a9b3c1;
+    --accent:#b7ff2a; --accent2:#3de0e0; --bad:#ff5a5a; --warn:#ffb020; --ok:#34d399;
+    --line:#20262d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial;
+       background:var(--bg); color:var(--ink); line-height:1.6;}
+  header{padding:22px 18px; border-bottom:1px solid var(--line); background:linear-gradient(180deg,#0f1216 0%,#0b0d10 100%); position:sticky;top:0;z-index:5}
+  h1{margin:0 0 2px; font-size:24px; letter-spacing:.2px}
+  .subtitle{color:var(--muted); font-size:13px}
+  main{padding:18px; max-width:1200px; margin:0 auto;}
+  .grid{display:grid; grid-template-columns: 1.2fr 1fr; gap:16px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; }
+  h2{font-size:18px; margin:0 0 10px;}
+  h3{font-size:15px; margin:12px 0 8px;}
+  label{display:block; font-size:13px; color:#cfe6ff; margin-bottom:6px}
+  input[type="number"], select{width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:#0f1317; color:var(--ink);}
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
+  .muted{color:var(--muted); font-size:12px}
+  .pill{display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; margin-right:6px; border:1px solid var(--line); background:#0f141a;}
+  .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+  .btn{display:inline-flex; align-items:center; gap:8px; padding:8px 12px; border-radius:999px; border:1px solid var(--line); background:#0f141a; color:var(--ink); cursor:pointer; font-size:13px}
+  .btn:hover{border-color:#2a3038}
+  .btn-accent{background:linear-gradient(180deg,#16210d,#0e1607); border-color:#293318; color:var(--accent)}
+  details{border-top:1px dashed var(--line); padding-top:12px; margin-top:10px}
+  summary{cursor:pointer; color:#cfe6ff}
+  .kpi-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
+  .kpi{background:#0f1317;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .kpi h4{margin:0;color:#cfe6ff;font-size:13px}
+  .kpi .v{font-size:18px; margin-top:4px}
+  .status{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px}
+  .banner{border:1px dashed var(--line); padding:8px 10px; border-radius:12px; margin:8px 0; font-size:13px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 8px}
+  .chip{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#0f141a;cursor:pointer;font-size:12px}
+  .chip.active{border-color:#2f3b20;background:#0f1a10;color:var(--accent)}
+  .flex{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+  .right{justify-content:flex-end}
+  .hint{font-size:12px;color:var(--muted)}
+  footer{color:var(--muted); font-size:12px; padding:26px 10px; text-align:center}
+  @media(max-width:980px){ .grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>PropYield‑D • Quick Yield App (MVP)</h1>
+  <div class="subtitle">Basic in 1 minute • Advanced on demand • Two-way Solver</div>
+</header>
+
+<main class="grid">
+  <!-- Left: Inputs -->
+  <section class="card">
+    <h2>1) Investment</h2>
+    <div class="chips" id="chip-invest">
+      <div class="chip active" data-mode="purchase">I know Purchase</div>
+      <div class="chip" data-mode="avg">I know Area×Avg</div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Purchase (THB)</label>
+        <input type="number" id="purchase" min="0" step="1000" value="15000000">
+      </div>
+      <div>
+        <label>Usable Area (sqm)</label>
+        <input type="number" id="area" min="0" step="1" value="0">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Avg Price / sqm (THB/sqm)</label>
+        <input type="number" id="avgpsm" min="0" step="100" value="0">
+        <div class="hint">Two‑way: ถ้าแก้ Avg → คำนวณ Purchase = Area×Avg</div>
+      </div>
+      <div>
+        <label>Target Net Yield (%)</label>
+        <input type="number" id="targetYield" min="0" step="0.1" value="6.0">
+      </div>
+    </div>
+
+    <details>
+      <summary>Advanced — Costs</summary>
+      <div class="row">
+        <div>
+          <label>Fit‑out (THB)</label>
+          <input type="number" id="fitout" min="0" step="1000" value="0">
+        </div>
+        <div>
+          <label>Acquisition Cost (% of Purchase)</label>
+          <input type="number" id="acqPct" min="0" step="0.1" value="0">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Acquisition Cost (THB)</label>
+          <input type="number" id="acqAmt" min="0" step="1000" value="0">
+          <div class="hint">ถ้าใส่ทั้ง % และ THB จะใช้ THB เป็นหลัก</div>
+        </div>
+        <div>
+          <label>Other Costs (THB)</label>
+          <input type="number" id="otherCost" min="0" step="1000" value="0">
+        </div>
+      </div>
+    </details>
+
+    <div class="banner">
+      Total Investment = Purchase + Fit‑out + Acquisition + Other
+    </div>
+
+    <h2 style="margin-top:16px">2) Revenue</h2>
+    <div class="chips" id="chip-rev">
+      <div class="chip active" data-mode="solveRent">Solve Rent (Fix Investment)</div>
+      <div class="chip" data-mode="solvePurchase">Solve Purchase (Fix Rent)</div>
+    </div>
+
+    <div class="row3">
+      <div>
+        <label>Rent Base (THB/mo)</label>
+        <input type="number" id="rent" min="0" step="500" value="80000">
+      </div>
+      <div>
+        <label>Occ (%)</label>
+        <input type="number" id="occ" min="0" max="100" step="1" value="90">
+      </div>
+      <div>
+        <label>Opex (% of Gross)</label>
+        <input type="number" id="opexPct" min="0" step="0.5" value="15">
+      </div>
+    </div>
+
+    <details>
+      <summary>Advanced — Opex & Agent</summary>
+      <div class="row3">
+        <div>
+          <label>Agent Fee (months)</label>
+          <input type="number" id="agentMonths" min="0" step="0.5" value="1">
+        </div>
+        <div>
+          <label>Common fee (THB/yr)</label>
+          <input type="number" id="commonYr" min="0" step="1000" value="0">
+        </div>
+        <div>
+          <label>Common fee by Area (THB/sqm/mo)</label>
+          <input type="number" id="commonRate" min="0" step="1" value="0">
+          <div class="hint">จะใช้สูตร Area×Rate×12 ถ้า Area > 0 และ Rate > 0</div>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Maintenance (THB/yr)</label>
+          <input type="number" id="maintYr" min="0" step="1000" value="0">
+        </div>
+        <div>
+          <label>Insurance (THB/yr)</label>
+          <input type="number" id="insYr" min="0" step="1000" value="0">
+        </div>
+      </div>
+    </details>
+
+    <h2 style="margin-top:16px">3) Financing (Optional)</h2>
+    <div class="row3">
+      <div>
+        <label>LTV (%)</label>
+        <input type="number" id="ltv" min="0" max="100" step="1" value="90">
+      </div>
+      <div>
+        <label>Rate (APR, %)</label>
+        <input type="number" id="rate" min="0" step="0.1" value="6.5">
+      </div>
+      <div>
+        <label>Loan Period (years)</label>
+        <select id="years">
+          <option>30</option><option>25</option><option>20</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Salary (THB/mo) <span class="muted">(optional for DTI)</span></label>
+        <input type="number" id="salary" min="0" step="1000" value="0">
+      </div>
+      <div>
+        <label>DTI Threshold (%)</label>
+        <input type="number" id="dtiThresh" min="0" step="1" value="40">
+      </div>
+    </div>
+
+    <div class="flex right" style="margin-top:10px">
+      <button class="btn btn-accent" id="calc">Calculate</button>
+      <button class="btn" id="reset">Reset to Defaults</button>
+    </div>
+  </section>
+
+  <!-- Right: Outputs -->
+  <section class="card">
+    <h2>Output & Status</h2>
+    <div class="status" id="statusPills">
+      <!-- dynamic pills -->
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi"><h4>Gross Yield</h4><div class="v" id="grossYield">–</div></div>
+      <div class="kpi"><h4>Net Yield</h4><div class="v" id="netYield">–</div></div>
+      <div class="kpi"><h4>Net / Month</h4><div class="v" id="netMonth">–</div></div>
+      <div class="kpi"><h4>Net / Year</h4><div class="v" id="netYear">–</div></div>
+      <div class="kpi"><h4>PMT / Month</h4><div class="v" id="pmt">–</div></div>
+      <div class="kpi"><h4>DTI</h4><div class="v" id="dti">–</div></div>
+      <div class="kpi"><h4>Cash‑on‑Cash</h4><div class="v" id="coc">–</div></div>
+      <div class="kpi"><h4>Total Investment</h4><div class="v" id="totalInv">–</div></div>
+    </div>
+
+    <div class="banner" id="notes"></div>
+
+    <h3>Assumptions</h3>
+    <div class="muted" id="assumpText"></div>
+  </section>
+</main>
+
+<footer>
+  PY‑D MVP • Single‑file HTML. No server. Calculations run in your browser.
+</footer>
+
+<script>
+function fmt(n,dec=0){
+  if (isNaN(n)) return "–";
+  return Number(n).toLocaleString(undefined,{maximumFractionDigits:dec, minimumFractionDigits:dec});
+}
+function getVal(id){ return Number(document.getElementById(id).value || 0); }
+function setVal(id, v, dec=0){ document.getElementById(id).textContent = (typeof v==="string")? v : fmt(v,dec); }
+
+function calc(){
+  // --- Read inputs
+  let purchase = getVal("purchase");
+  const area = getVal("area");
+  let avgpsm = getVal("avgpsm");
+  const fitout = getVal("fitout");
+  const acqPct = getVal("acqPct")/100;
+  const acqAmt = getVal("acqAmt");
+  const otherCost = getVal("otherCost");
+  const targetYield = getVal("targetYield")/100;
+
+  const rentBase = getVal("rent");
+  const occ = getVal("occ")/100;
+  const opexPct = getVal("opexPct")/100;
+  const agentMonths = getVal("agentMonths");
+  const commonYr = getVal("commonYr");
+  const commonRate = getVal("commonRate");
+  const maintYr = getVal("maintYr");
+  const insYr = getVal("insYr");
+
+  const ltv = getVal("ltv")/100;
+  const rateAPR = getVal("rate")/100;
+  const years = Number(document.getElementById("years").value);
+  const salary = getVal("salary");
+  const dtiThresh = getVal("dtiThresh")/100;
+
+  // --- Two-way: Area x Avg
+  const investMode = document.querySelector('#chip-invest .chip.active')?.dataset.mode || "purchase";
+  if (investMode==="avg" && area>0 && avgpsm>0){
+    purchase = area * avgpsm;
+    document.getElementById("purchase").value = Math.round(purchase);
+  } else if (area>0 && purchase>0){
+    avgpsm = purchase / area;
+    document.getElementById("avgpsm").value = Math.round(avgpsm);
+  }
+
+  // Acquisition pick: THB overrides %
+  const acqFromPct = purchase * (isFinite(acqPct)?acqPct:0);
+  const acquisition = (acqAmt>0)? acqAmt : acqFromPct;
+
+  // Total Investment
+  const totalInv = Math.max(0, purchase) + Math.max(0, fitout) + Math.max(0, acquisition) + Math.max(0, otherCost);
+
+  // Revenue core
+  const grossYear = rentBase * 12;
+  const effYear = grossYear * (isFinite(occ)?occ:0);
+
+  // Opex: either % or breakdown sum (if any component > 0 -> use breakdown)
+  const breakdownCommon = (area>0 && commonRate>0)? (area*commonRate*12) : commonYr;
+  const breakdownSum = Math.max(0, breakdownCommon) + Math.max(0, maintYr) + Math.max(0, insYr);
+  const opexByPct = effYear * (isFinite(opexPct)?opexPct:0);
+  const useBreakdown = breakdownSum > 0;
+  const opexYear = useBreakdown ? breakdownSum : opexByPct;
+
+  const agentYear = Math.max(0, agentMonths) * rentBase;
+  const netYear = Math.max(0, effYear - opexYear - agentYear);
+  const netMonth = netYear / 12;
+
+  // Solver on Revenue vs Investment
+  const revMode = document.querySelector('#chip-rev .chip.active')?.dataset.mode || "solveRent";
+  let requiredRent = 0;
+  let maxPurchaseFromYield = 0;
+  let notes = [];
+
+  if (targetYield>0){
+    if (revMode==="solveRent"){
+      // Solve Rent such that NetYear / totalInv >= targetYield
+      // NetYear = Eff - Opex - Agent
+      // Approximate: assume opex% of gross when no breakdown; when breakdown used, keep breakdown constant.
+      // Eff = Rent*12*occ; Agent = months*Rent
+      // Case A: percent opex
+      if (!useBreakdown){
+        const a = 12*occ*(1-opexPct) - agentMonths; // coefficient on Rent
+        if (a>0){
+          requiredRent = (targetYield*totalInv) / a;
+        } else {
+          requiredRent = Infinity;
+        }
+      } else {
+        // Case B: breakdown fixed amount
+        const a = 12*occ - agentMonths;
+        const b = breakdownSum;
+        if (a>0){
+          requiredRent = (targetYield*totalInv + b) / a;
+        } else {
+          requiredRent = Infinity;
+        }
+      }
+      notes.push(`Solve Rent ⇒ ต้องการค่าเช่าประมาณ THB ${fmt(requiredRent,0)}/เดือน เพื่อให้ Net Yield ≥ ${fmt(targetYield*100,1)}%`);
+    } else {
+      // Solve Max Purchase from Yield
+      if (totalInv>0){
+        maxPurchaseFromYield = netYear / targetYield;
+        notes.push(`Solve Purchase ⇒ ควรซื้อไม่เกิน ~ THB ${fmt(maxPurchaseFromYield,0)} เพื่อให้ Net Yield ≥ ${fmt(targetYield*100,1)}% ด้วยค่าเช่าปัจจุบัน`);
+      }
+    }
+  }
+
+  // Financing
+  const loan = Math.max(0, totalInv * ltv);
+  const equity = Math.max(0, totalInv - loan);
+  const r = rateAPR/12;
+  const n = years*12;
+  let pmt = 0;
+  if (loan>0 && n>0){
+    pmt = (r>0) ? (loan * (r*Math.pow(1+r,n)) / (Math.pow(1+r,n)-1)) : (loan/n);
+  }
+  const dti = (salary>0 && pmt>0) ? (pmt/salary) : 0;
+  const coc = (equity>0) ? ((netYear - pmt*12)/equity) : 0;
+
+  // KPI
+  const grossYield = (totalInv>0) ? (grossYear/totalInv) : 0;
+  const netYield = (totalInv>0) ? (netYear/totalInv) : 0;
+
+  // Output
+  setVal("grossYield", grossYield*100, 2);
+  setVal("netYield", netYield*100, 2);
+  setVal("netMonth", netMonth, 0);
+  setVal("netYear", netYear, 0);
+  setVal("pmt", pmt, 0);
+  setVal("dti", dti*100, 2);
+  setVal("coc", coc*100, 2);
+  setVal("totalInv", totalInv, 0);
+
+  // Status pills
+  const pills = [];
+  if (targetYield>0){
+    if (netYield >= targetYield) pills.push(`<span class="pill ok">Yield ✓ ${fmt(netYield*100,2)}%</span>`);
+    else pills.push(`<span class="pill bad">Yield ✕ ${fmt(netYield*100,2)}% &lt; ${fmt(targetYield*100,1)}%</span>`);
+  } else {
+    pills.push(`<span class="pill">Yield ${fmt(netYield*100,2)}%</span>`);
+  }
+  if (salary>0){
+    if (dti <= 0.30) pills.push(`<span class="pill ok">DTI ${fmt(dti*100,1)}%</span>`);
+    else if (dti <= (isFinite(dtiThresh)?dtiThresh:0.40)) pills.push(`<span class="pill warn">DTI ${fmt(dti*100,1)}%</span>`);
+    else pills.push(`<span class="pill bad">DTI ${fmt(dti*100,1)}% &gt; ${fmt((isFinite(dtiThresh)?dtiThresh:0.40)*100,0)}%</span>`);
+  }
+  document.getElementById("statusPills").innerHTML = pills.join(" ");
+
+  // Notes
+  document.getElementById("notes").innerHTML = notes.join("<br>");
+
+  // Assumptions text
+  const lines = [];
+  lines.push(`Occ=${fmt(occ*100,0)}%, Opex=${useBreakdown? "breakdown" : (fmt(opexPct*100,1)+'% of Gross')}, Agent=${fmt(agentMonths,1)} mo/yr`);
+  if (useBreakdown){
+    lines.push(`Breakdown: Common=${fmt(breakdownCommon,0)}, Maint=${fmt(maintYr,0)}, Ins=${fmt(insYr,0)}`);
+  }
+  if (loan>0){
+    lines.push(`Financing: LTV=${fmt(ltv*100,0)}%, Rate=${fmt(rateAPR*100,2)}% APR, Years=${years}, Loan≈${fmt(loan,0)}`);
+  }
+  document.getElementById("assumpText").textContent = lines.join(" • ");
+}
+
+function setActiveChip(containerId, el){
+  document.querySelectorAll(`${containerId} .chip`).forEach(c=>c.classList.remove("active"));
+  el.classList.add("active");
+}
+
+document.getElementById("calc").addEventListener("click", calc);
+document.getElementById("reset").addEventListener("click", ()=>{ location.reload(); });
+
+document.querySelectorAll('#chip-invest .chip').forEach(ch=>{
+  ch.addEventListener('click', ()=> setActiveChip('#chip-invest', ch));
+});
+document.querySelectorAll('#chip-rev .chip').forEach(ch=>{
+  ch.addEventListener('click', ()=> setActiveChip('#chip-rev', ch));
+});
+
+// Auto-calc on load & when certain key inputs change
+["purchase","area","avgpsm","fitout","acqPct","acqAmt","otherCost",
+ "targetYield","rent","occ","opexPct","agentMonths","commonYr","commonRate","maintYr","insYr",
+ "ltv","rate","years","salary","dtiThresh"].forEach(id=>{
+   const el = document.getElementById(id);
+   el.addEventListener('input', ()=>{ /*live*/ });
+});
+calc();
+</script>
+</body>
+</html>
